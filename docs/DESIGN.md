@@ -7,17 +7,21 @@
 
 ## 📍 STATUS & WHAT'S NEXT
 
-**Where we are (2026-06-08):** Design phase **COMPLETE.** Idea captured,
-researched, and every major decision locked (see *Locked Decisions* below). **No
-code or repo exists yet** — nothing has been built.
+**Where we are (2026-06-08):** Building Phase 1 features. ✅ **Design complete**,
+✅ **data model complete** (7 tables), ✅ **scaffold complete** (monorepo + Postgres
++ Drizzle, migrated), ✅ **AUTH complete** (signup / login / logout / me /
+email-verification — sessions + bcrypt + Brevo-mock, tested + committed).
 
-**What's next — Phase 1 begins with DATA MODELING** (no code needed for it):
+**The repo:** `c:\Users\Gebruiker\Desktop\general\aligned\` (monorepo) — see its
+`README.md` for how to run. Code lives there; this file is the design/planning note.
+Run: `pnpm db:up` → `pnpm dev:api` (:4000) + `pnpm dev:web` (:3000).
 
-1. **▶ Data modeling (NEXT STEP)** — design every data shape + relationship.
-2. Scaffold the `aligned` monorepo + Next.js web app + local Postgres (Docker).
-3. Drizzle schema + migrations (turn the data shapes into real tables).
-4. Build features: auth → profiles → friends → calendars → manual events →
-   the free-slot merge view.
+**▶ NEXT feature: PROFILES** — edit display name / bio / profile image; view a user
+by their `username#tag`. Then: friends → calendars → events → the free-slot merge.
+(Feature order: auth✅ → profiles → friends → calendars → events → merge.)
+
+**Learning note:** `c:\Users\Gebruiker\Desktop\learning-notes\ALIGNED_NOTES.md`
+(new things learned on this project — Next.js, pnpm monorepo, Drizzle, Postgres).
 
 **Still parked (do before publishing, not now):** design the logo + app icon;
 name clearance (trademark / domain / store-name check).
@@ -264,9 +268,23 @@ The permission link: which friend may VIEW which calendar. Basis for the free-sl
 
 ### Data model — DONE ✅ (7 tables)
 `users` · `friendships` · `blocks` · `calendars` · `events` · `calendar_shares` ·
-`messages`. All UUID PKs, all timestamps `timestamptz` (UTC). NEXT: Phase-1 step 2 —
-scaffold the monorepo + Postgres, then step 3 — turn these into Drizzle schema +
-migrations.
+`messages`. All UUID PKs, all timestamps `timestamptz` (UTC). Plus a `session` table
+(owned by connect-pg-simple). Built as Drizzle schema → migrated → live in Postgres.
+
+### IMPLEMENTATION PROGRESS (what's actually built in `aligned/`)
+- ✅ **Scaffold** — pnpm monorepo (`apps/web` Next.js 16, `apps/api` Express+Drizzle,
+  `packages/core` shared TS), Postgres 17 via Docker (`docker-compose.yml`, port 5433).
+- ✅ **Drizzle schema + migrations** — `apps/api/src/db/schema.ts` = all 7 tables +
+  `session`; `tstzrange` customType; GiST index on `events.during`; enums
+  (`friendship_status`, `event_visibility`); all constraints. 2 migrations applied.
+- ✅ **AUTH** (`apps/api/src/auth/`) — signup (bcrypt hash + auto-random
+  discriminator + auto default calendar + verify email), login (session cookie),
+  logout, `GET /me`, `POST /verify-email` (JWT code). DB-backed sessions
+  (connect-pg-simple). Email via ported Brevo module (`src/email/`, mock-when-no-key
+  → logs code to console in dev). Tested end-to-end incl. edge cases.
+  - Env: `apps/api/.env` (DATABASE_URL, SESSION_SECRET, JWT_SECRET, WEB_BASE_URL;
+    Brevo unset in dev).
+- ⏳ **NEXT: profiles** → friends → calendars → events → free-slot merge.
 
 ---
 
