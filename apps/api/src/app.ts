@@ -5,6 +5,7 @@ import cors from 'cors';
 import { CORE_VERSION } from '@aligned/core';
 import { sessionMiddleware } from './auth/session';
 import { authRouter } from './auth/routes';
+import { profileRouter } from './profile/routes';
 
 export function createApp(): Express {
   const app = express();
@@ -23,6 +24,7 @@ export function createApp(): Express {
   });
 
   app.use('/auth', authRouter);
+  app.use('/', profileRouter);
 
   return app;
 }
