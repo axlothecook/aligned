@@ -1,4 +1,3 @@
-CREATE TYPE "public"."event_visibility" AS ENUM('visible', 'busy_hidden', 'private');--> statement-breakpoint
 CREATE TYPE "public"."friendship_status" AS ENUM('pending', 'accepted', 'declined');--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "blocks" (
 	"blocker_id" uuid NOT NULL,
@@ -8,33 +7,27 @@ CREATE TABLE IF NOT EXISTS "blocks" (
 	CONSTRAINT "no_self_block" CHECK ("blocks"."blocker_id" <> "blocks"."blocked_id")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "calendar_shares" (
+CREATE TABLE IF NOT EXISTS "busy_events" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"calendar_id" uuid NOT NULL,
-	"shared_with_id" uuid NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "uq_share" UNIQUE("calendar_id","shared_with_id")
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "calendars" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"owner_id" uuid NOT NULL,
-	"name" text NOT NULL,
-	"color" text,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL
-);
---> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "events" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"calendar_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
 	"title" text NOT NULL,
-	"during" "tstzrange" NOT NULL,
-	"timezone" text NOT NULL,
 	"is_all_day" boolean DEFAULT false NOT NULL,
-	"visibility" "event_visibility" DEFAULT 'visible' NOT NULL,
-	"recurrence_rule" text,
+	"during" "tstzrange",
+	"timezone" text,
+	"during_date" daterange,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "calendar_members" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"calendar_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"color" text NOT NULL,
+	"is_ready" boolean DEFAULT false NOT NULL,
+	"joined_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "uq_member" UNIQUE("calendar_id","user_id")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "friendships" (
@@ -57,6 +50,43 @@ CREATE TABLE IF NOT EXISTS "messages" (
 	"body" text NOT NULL,
 	"read_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "recurring_blocks" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"calendar_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"label" text NOT NULL,
+	"weekdays" text NOT NULL,
+	"start_minute" integer NOT NULL,
+	"end_minute" integer NOT NULL,
+	"timezone" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "session" (
+	"sid" varchar PRIMARY KEY NOT NULL,
+	"sess" json NOT NULL,
+	"expire" timestamp (6) with time zone NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "shared_calendars" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"name" text,
+	"start_date" text NOT NULL,
+	"created_by" uuid NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "sleep_blocks" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"calendar_id" uuid NOT NULL,
+	"user_id" uuid NOT NULL,
+	"start_minute" integer NOT NULL,
+	"end_minute" integer NOT NULL,
+	"timezone" text NOT NULL,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "uq_sleep" UNIQUE("calendar_id","user_id")
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
@@ -87,25 +117,25 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "calendar_shares" ADD CONSTRAINT "calendar_shares_calendar_id_calendars_id_fk" FOREIGN KEY ("calendar_id") REFERENCES "public"."calendars"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "busy_events" ADD CONSTRAINT "busy_events_calendar_id_shared_calendars_id_fk" FOREIGN KEY ("calendar_id") REFERENCES "public"."shared_calendars"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "calendar_shares" ADD CONSTRAINT "calendar_shares_shared_with_id_users_id_fk" FOREIGN KEY ("shared_with_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "busy_events" ADD CONSTRAINT "busy_events_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "calendars" ADD CONSTRAINT "calendars_owner_id_users_id_fk" FOREIGN KEY ("owner_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "calendar_members" ADD CONSTRAINT "calendar_members_calendar_id_shared_calendars_id_fk" FOREIGN KEY ("calendar_id") REFERENCES "public"."shared_calendars"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "events" ADD CONSTRAINT "events_calendar_id_calendars_id_fk" FOREIGN KEY ("calendar_id") REFERENCES "public"."calendars"("id") ON DELETE cascade ON UPDATE no action;
+ ALTER TABLE "calendar_members" ADD CONSTRAINT "calendar_members_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -140,7 +170,38 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "ix_events_during" ON "events" USING gist ("during");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "ix_events_calendar" ON "events" USING btree ("calendar_id");--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "recurring_blocks" ADD CONSTRAINT "recurring_blocks_calendar_id_shared_calendars_id_fk" FOREIGN KEY ("calendar_id") REFERENCES "public"."shared_calendars"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "recurring_blocks" ADD CONSTRAINT "recurring_blocks_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "shared_calendars" ADD CONSTRAINT "shared_calendars_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "sleep_blocks" ADD CONSTRAINT "sleep_blocks_calendar_id_shared_calendars_id_fk" FOREIGN KEY ("calendar_id") REFERENCES "public"."shared_calendars"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+ ALTER TABLE "sleep_blocks" ADD CONSTRAINT "sleep_blocks_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "ix_busy_during" ON "busy_events" USING gist ("during");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "ix_busy_cal_user" ON "busy_events" USING btree ("calendar_id","user_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "ix_friend_high" ON "friendships" USING btree ("user_high");--> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "ix_messages_created" ON "messages" USING btree ("created_at");
+CREATE INDEX IF NOT EXISTS "ix_messages_created" ON "messages" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "ix_session_expire" ON "session" USING btree ("expire");

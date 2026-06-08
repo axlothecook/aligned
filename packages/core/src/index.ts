@@ -9,3 +9,5 @@
 // Keep this package framework-agnostic: no React, no DOM, no DB client imports.
 
 export const CORE_VERSION = '0.0.0';
+
+export * from './freeslots';

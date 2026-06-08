@@ -16,6 +16,6 @@ beforeEach(async () => {
   // Wipe all app tables (RESTART IDENTITY + CASCADE). `session` is wiped too so
   // login state never leaks between tests.
   await db.execute(
-    sql`TRUNCATE TABLE messages, calendar_shares, events, calendars, blocks, friendships, users, session RESTART IDENTITY CASCADE`,
+    sql`TRUNCATE TABLE busy_events, recurring_blocks, sleep_blocks, calendar_members, shared_calendars, messages, blocks, friendships, users, session RESTART IDENTITY CASCADE`,
   );
 });

@@ -5,7 +5,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { eq } from 'drizzle-orm';
 import { db } from '../db/client';
-import { users, calendars } from '../db/schema';
+import { users } from '../db/schema';
 import { hashPassword, verifyPassword, makeCodeToken, verifyCodeToken } from './password';
 import { assignDiscriminator, UsernameFullError } from './discriminator';
 import { requireAuth } from './session';
@@ -90,8 +90,8 @@ authRouter.post('/signup', async (req, res) => {
       .values({ email, username, discriminator, displayName, passwordHash })
       .returning();
 
-    // Auto-create a default calendar (DESIGN.md calendars).
-    await db.insert(calendars).values({ ownerId: user.id, name: 'My Calendar' });
+    // (No auto-default-calendar: in the shared-calendar model there are no personal
+    // calendars — a calendar is a group meetup created by selecting members.)
 
     // Send the verification code (logged to console in dev).
     await sendVerifyEmail(user.id, user.email);
