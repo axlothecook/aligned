@@ -20,6 +20,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { tstzrange } from './tstzrange';
+import { daterange } from './daterange';
 
 // ── Enums ────────────────────────────────────────────────────────────────────
 export const friendshipStatus = pgEnum('friendship_status', [
@@ -123,9 +124,14 @@ export const events = pgTable(
       .notNull()
       .references(() => calendars.id, { onDelete: 'cascade' }),
     title: text('title').notNull(),
-    during: tstzrange('during').notNull(), // UTC start+end; the && overlap column
-    timezone: text('timezone').notNull(), // IANA zone, e.g. 'Europe/Zagreb'
     isAllDay: boolean('is_all_day').notNull().default(false),
+    // TIMED events: an absolute UTC instant range (the && overlap column) + the
+    // IANA zone it was created in (for display/recurrence). Both NULL for all-day.
+    during: tstzrange('during'), // nullable — set for timed events only
+    timezone: text('timezone'), // IANA zone, e.g. 'Europe/Zagreb' — timed only
+    // ALL-DAY events: a FLOATING date span (zone-free, June 10 = June 10 everywhere).
+    // NULL for timed events. (Timezone research: all-day must NOT be a UTC instant.)
+    duringDate: daterange('during_date'), // nullable — set for all-day events only
     visibility: eventVisibility('visibility').notNull().default('visible'),
     recurrenceRule: text('recurrence_rule'), // RRULE if it repeats; NULL = one-off
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
