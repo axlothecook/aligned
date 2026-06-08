@@ -293,10 +293,16 @@ The permission link: which friend may VIEW which calendar. Basis for the free-sl
   public basics + friendship status; **bio shown ONLY to friends/self**,
   Discord-style). Profile-image FILE upload (→ R2) deferred; `image_url` is a
   string for now.
-- 🧪 **28 tests green** (10 unit + 18 integration). GitHub:
+- ✅ **FRIENDS** (`apps/api/src/friends/`) — `POST /friends/request|accept|decline`
+  (by tag), `DELETE /friends` (unfriend), `POST|DELETE /blocks`, `GET /friends` +
+  `/friends/requests`. Service layer (`service.ts`) implements the anti-spam design:
+  ONE row per pair (UNIQUE → no pileup), escalating cooldown (1h × declined_count →
+  429), block REMOVES the friendship + suppresses requests. Shared
+  `users/lookup.ts` (findByTag).
+- 🧪 **39 tests green** (13 unit + 26 integration). GitHub:
   https://github.com/axlothecook/aligned (branch-per-feature → merge to main → push).
-- ⏳ **NEXT: friends** (send/accept/decline requests by tag, block) → calendars →
-  events → free-slot merge.
+- ⏳ **NEXT: calendars** (create/rename/delete + the per-friend SHARE = calendar_shares)
+  → events → free-slot merge.
 
 ---
 
