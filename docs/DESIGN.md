@@ -20,11 +20,20 @@ events**, and **`GET /free` = the GREEN everyone-free overlap**). **62 tests gre
 github.com/axlothecook/aligned. Run: `pnpm db:up` → `pnpm dev:api` (:4000) +
 `pnpm dev:web` (:3000). WORKFLOW: branch-per-feature → merge to main → push.
 
-**▶ NEXT:** the BACKEND core is done — next is either (a) the **WEB FRONTEND**
-(Next.js: the actual calendar UI — month grid, the colored busy overlays, the green
-free slots, the schedule-entry forms, the copy-from-existing wizard), or (b) remaining
-backend polish (copy-from-existing endpoint, rolling-window enforcement, chat). The
-front-end is where the Next.js learning happens — likely next.
+✅ **WEB FRONTEND FOUNDATION** (Next.js App Router, `apps/web`): the shared typed API
+client (`packages/core/api.ts`), auth context (`src/lib/auth.tsx` → `useAuth`), NavBar,
+login/signup pages, session-aware home + placeholder /calendars + /friends. Sass
+Modules; `transpilePackages` for core; `NEXT_PUBLIC_API_URL`. Builds + runs; signup/
+login verified live.
+
+**▶ NEXT (build the real UI on top of the working API):**
+1. **Friends UI** — add by tag, see/accept/decline requests, friends list.
+2. **Shared-calendar UI** — create a meetup (pick friends + start date); members list
+   with colors; the **schedule-entry forms** (sleep / recurring / one-off events); and
+   the **month grid** with each member's **transparent stacking color overlays** +
+   the **solid GREEN free-for-all** slots (the visual payoff). Plus the
+   copy-from-existing wizard. (All endpoints already exist + tested — this is UI.)
+- **Run:** `pnpm db:up` → `pnpm dev:api` (:4000) + `pnpm dev:web` (:3000) → open :3000.
 
 **Learning note:** `c:\Users\Gebruiker\Desktop\learning-notes\ALIGNED_NOTES.md`
 (new things learned on this project — Next.js, pnpm monorepo, Drizzle, Postgres).
