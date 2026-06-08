@@ -7,18 +7,24 @@
 
 ## 📍 STATUS & WHAT'S NEXT
 
-**Where we are (2026-06-08):** Building Phase 1 features. ✅ **Design complete**,
-✅ **data model complete** (7 tables), ✅ **scaffold complete** (monorepo + Postgres
-+ Drizzle, migrated), ✅ **AUTH complete** (signup / login / logout / me /
-email-verification — sessions + bcrypt + Brevo-mock, tested + committed).
+**Where we are (2026-06-08):** BACKEND of the core flow is BUILT + TESTED. The model
+was REVISED mid-build to the **shared-calendar-centric** design (see the 🔄 section
+below) — a calendar IS a group meetup; the headline GREEN free-for-all feature works.
 
-**The repo:** `c:\Users\Gebruiker\Desktop\general\aligned\` (monorepo) — see its
-`README.md` for how to run. Code lives there; this file is the design/planning note.
-Run: `pnpm db:up` → `pnpm dev:api` (:4000) + `pnpm dev:web` (:3000).
+✅ AUTH · ✅ PROFILES (bio-gated) · ✅ FRIENDS (anti-spam) · ✅ **SHARED CALENDARS**
+(create w/ friend members, membership, per-member color + ready, **sleep / recurring /
+events**, and **`GET /free` = the GREEN everyone-free overlap**). **62 tests green**
+(28 unit incl. the freeslots algorithm in `packages/core`, 34 integration).
 
-**▶ NEXT feature: PROFILES** — edit display name / bio / profile image; view a user
-by their `username#tag`. Then: friends → calendars → events → the free-slot merge.
-(Feature order: auth✅ → profiles → friends → calendars → events → merge.)
+**The repo:** `c:\Users\Gebruiker\Desktop\general\aligned\` (monorepo). GitHub:
+github.com/axlothecook/aligned. Run: `pnpm db:up` → `pnpm dev:api` (:4000) +
+`pnpm dev:web` (:3000). WORKFLOW: branch-per-feature → merge to main → push.
+
+**▶ NEXT:** the BACKEND core is done — next is either (a) the **WEB FRONTEND**
+(Next.js: the actual calendar UI — month grid, the colored busy overlays, the green
+free slots, the schedule-entry forms, the copy-from-existing wizard), or (b) remaining
+backend polish (copy-from-existing endpoint, rolling-window enforcement, chat). The
+front-end is where the Next.js learning happens — likely next.
 
 **Learning note:** `c:\Users\Gebruiker\Desktop\learning-notes\ALIGNED_NOTES.md`
 (new things learned on this project — Next.js, pnpm monorepo, Drizzle, Postgres).
@@ -105,7 +111,81 @@ shapes, so modeling first avoids constant reshaping later.
 
 ---
 
-## DATA MODEL (in progress — Phase 1 step 1)
+## 🔄 MODEL REVISED 2026-06-08 — SHARED-CALENDAR-CENTRIC (supersedes the per-user model below)
+
+The original model (users own calendars → share them) was WRONG. The real concept:
+
+**A "calendar" IS a group meetup, not something one person owns. There are NO personal
+calendars — only shared ones, each between selected members. Each member fills in their
+OWN busy times within that shared calendar; the app paints the hours nobody is busy
+GREEN = everyone's free.**
+
+### The user flow
+
+1. User A **selects member(s)** (friends) → creates a shared calendar with them.
+2. A **enters a start date** → the calendar is a **rolling 12-month window**: starts at
+   the month containing that date, ends the same month next year. As real time passes,
+   the front month drops off and a new month is appended (always 12 months long).
+3. Each member fills in their **unavailability** on this shared calendar:
+   - **Sleep** (built-in) — a nightly start–end hour range (may cross midnight),
+     applies **every day** across all 12 months. (Weekends is NOT built-in — users may
+     want weekends free.)
+   - **Recurring blocks** (user-created) — "always unavailable" repeats, e.g. "every
+     Tuesday 14:00–16:00", named by the user.
+   - **Events** (one-off) — specific busy slots: hourly-duration OR whole-day.
+4. Member clicks **"Add my schedule"** → marks themselves **READY**. The **green
+   free-for-all** overlay is shown once **all members are ready** (re-opening to edit
+   un-readies them).
+5. **Green = an hour where NOBODY in the calendar is busy** (free for ALL members).
+
+### Colors (UX)
+
+- The **system assigns each member a default color** (so there's one immediately), but
+  the member **CAN change their own color**. That color = that member's unavailability
+  (their sleep + recurring blocks + events). (Ideally distinct per calendar to avoid
+  clashes — the picker can warn/avoid duplicates.)
+- All unavailability colors are **partially transparent** → when multiple members are
+  busy at the same time, their colors **stack/overlap → the slot looks deeper/darker**
+  (visual density = how many people are busy).
+- **Green = available-for-all** is the one **solid** (non-transparent) color.
+
+### Copy-from-existing wizard (on joining/creating a new calendar)
+
+When a user creates or is added to a NEW calendar AND already has ≥1 other calendar,
+ask if they want to copy data over:
+- If they have **>1** existing calendar → first ask **which** one to copy from.
+- Then a **multi-select of WHAT to copy**, grouped by type: **Sleep**, each
+  **user-created recurring block** (listed individually), **all one-off events**.
+
+### Rolling-window behavior
+
+- **Recurring blocks (sleep + recurring) auto-apply to all 12 visible months** — they
+  aren't tied to a month, so they survive the window rolling.
+- **One-off events in a month that scrolls out of the window are gone** (past, no longer
+  shown). No history view for v1.
+
+### NEW data model (shared-calendar-centric)
+
+| Table | Purpose |
+|-------|---------|
+| `shared_calendars` | a meetup calendar: id, name?, **start_date** (anchors the rolling window), created_by, created_at |
+| `calendar_members` | membership: (calendar_id, user_id) + **member_color** (system-assigned, fixed) + **is_ready** (the "Add my schedule" flag) + joined_at |
+| `sleep_blocks` | built-in sleep per (calendar_id, user_id): nightly start/end time (local), may cross midnight |
+| `recurring_blocks` | user-created "always unavailable" repeats per (calendar_id, user_id): a label + a recurrence rule (RRULE or day-of-week + time range) |
+| `busy_events` | one-off busy slots per (calendar_id, user_id): timed (UTC tstzrange + timezone) OR all-day (daterange); reuses the timezone work already done |
+
+- **`users`, `friendships`, `blocks` are UNCHANGED** (friends-gate membership; still need
+  auth/profiles/friends — all already built + tested).
+- The free-slot "green" computation: for a window, gather every member's busy intervals
+  (sleep + recurring expanded + events), in UTC; an hour is GREEN iff it's in NObody's
+  busy set. (Same interval/sweep-line idea, now per shared calendar.)
+- 🚧 **What changes from the built code:** the `calendars` + `calendar_shares` + `events`
+  tables get RESHAPED into the above. `auth/profiles/friends` stay. Tests for the old
+  calendar/event endpoints get replaced.
+
+---
+
+## DATA MODEL (⚠️ SUPERSEDED by the revision above — kept for history)
 
 Designing tables + fields + relationships. UUID primary keys. All timestamps
 `timestamptz` (UTC). *(Status: modeling started 2026-06-08.)*
