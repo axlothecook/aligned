@@ -8,6 +8,7 @@ import { authRouter } from './auth/routes';
 import { profileRouter } from './profile/routes';
 import { friendsRouter } from './friends/routes';
 import { calendarsRouter } from './calendars/routes';
+import { eventsRouter } from './events/routes';
 
 export function createApp(): Express {
   const app = express();
@@ -29,6 +30,7 @@ export function createApp(): Express {
   app.use('/', profileRouter);
   app.use('/', friendsRouter);
   app.use('/', calendarsRouter);
+  app.use('/', eventsRouter);
 
   return app;
 }

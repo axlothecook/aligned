@@ -15,6 +15,13 @@
       "when": 1780939803242,
       "tag": "0001_tearful_cardiac",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1780945807487,
+      "tag": "0002_ancient_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }
