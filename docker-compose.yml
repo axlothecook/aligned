@@ -1,0 +1,32 @@
+# Local development database for Aligned.
+# Start:  pnpm db:up      (docker compose up -d)
+# Stop:   pnpm db:down
+#
+# Plain official Postgres 17. Data persists in the named volume across restarts.
+#
+# NOTE on pg_cron (the 2-week message TTL, DESIGN.md #8): the official image does
+# NOT ship pg_cron, and it isn't needed in local dev (you don't accumulate old
+# messages to expire while building). pg_cron is a PRODUCTION concern → set it up
+# in the aligned-deploy / Pi stack (custom image or community pg_cron image) when
+# we deploy. Locally, the messages table just keeps everything.
+services:
+  db:
+    image: postgres:17
+    container_name: aligned-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: aligned
+      POSTGRES_PASSWORD: aligned_dev_pw
+      POSTGRES_DB: aligned
+    ports:
+      - "5433:5432" # host 5433 → container 5432 (avoids clashing with any local Postgres)
+    volumes:
+      - aligned-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aligned -d aligned"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  aligned-pgdata:

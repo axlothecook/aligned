@@ -1,0 +1,15 @@
+{
+  "name": "@aligned/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript used by both web and api: domain types, the API client, and pure logic like the free-slot merge.",
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

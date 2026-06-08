@@ -1,0 +1,15 @@
+# Tells pnpm where the workspace packages live. Any folder matching these globs
+# with its own package.json is part of the monorepo and can be imported by the
+# others (e.g. apps/web can import packages/core directly, no publishing).
+packages:
+  - 'apps/*'
+  - 'packages/*'
+# Trusted dependencies allowed to run their native build/postinstall scripts.
+# (pnpm blocks these by default for security; these are well-known build tools:
+#  esbuild = bundler behind tsx/Next; sharp = Next.js image optimization;
+#  @parcel/watcher = file-watching; unrs-resolver = module resolution.)
+allowBuilds:
+  '@parcel/watcher': true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true

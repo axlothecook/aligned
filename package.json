@@ -1,0 +1,16 @@
+{
+  "name": "aligned",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Aligned — a social shared-calendar app to find friends' free overlapping time. Monorepo root.",
+  "packageManager": "pnpm@11.5.2",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "dev:web": "pnpm --filter @aligned/web dev",
+    "dev:api": "pnpm --filter @aligned/api dev"
+  }
+}
