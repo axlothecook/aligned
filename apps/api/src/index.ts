@@ -1,16 +1,28 @@
 // Aligned API — entry point. Express server.
-// Step 2 scaffold: a single health-check route to prove the server runs.
-// Real routes (auth, friends, calendars, events, the free-slot merge) come in
-// the feature-build phase (Phase 1 step 4).
+import 'dotenv/config';
 import express from 'express';
+import cors from 'cors';
 import { CORE_VERSION } from '@aligned/core';
+import { sessionMiddleware } from './auth/session';
+import { authRouter } from './auth/routes';
 
 const app = express();
+
+// Allow the web app to call the API with cookies.
+app.use(
+  cors({
+    origin: process.env['WEB_BASE_URL'] ?? 'http://localhost:3000',
+    credentials: true,
+  }),
+);
 app.use(express.json());
+app.use(sessionMiddleware());
 
 app.get('/health', (_req, res) => {
   res.json({ ok: true, service: 'aligned-api', core: CORE_VERSION });
 });
+
+app.use('/auth', authRouter);
 
 const PORT = Number(process.env.PORT ?? 4000);
 app.listen(PORT, () => {

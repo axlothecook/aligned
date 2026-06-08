@@ -11,6 +11,8 @@ import {
   integer,
   timestamp,
   char,
+  json,
+  varchar,
   unique,
   primaryKey,
   check,
@@ -170,4 +172,18 @@ export const messages = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('ix_messages_created').on(t.createdAt)], // cheap TTL deletes
+);
+
+// ── session ──────────────────────────────────────────────────────────────────
+// Owned by `connect-pg-simple` (express-session's Postgres store). It reads/writes
+// this table itself; we define it only so our migration creates it. Shape must
+// match connect-pg-simple's expected table (sid PK, sess json, expire timestamp).
+export const session = pgTable(
+  'session',
+  {
+    sid: varchar('sid').primaryKey(),
+    sess: json('sess').notNull(),
+    expire: timestamp('expire', { precision: 6, withTimezone: true }).notNull(),
+  },
+  (t) => [index('ix_session_expire').on(t.expire)],
 );
