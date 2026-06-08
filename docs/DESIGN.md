@@ -299,10 +299,15 @@ The permission link: which friend may VIEW which calendar. Basis for the free-sl
   ONE row per pair (UNIQUE → no pileup), escalating cooldown (1h × declined_count →
   429), block REMOVES the friendship + suppresses requests. Shared
   `users/lookup.ts` (findByTag).
-- 🧪 **39 tests green** (13 unit + 26 integration). GitHub:
+- ✅ **CALENDARS** (`apps/api/src/calendars/`) — CRUD (`GET/POST/PATCH/DELETE
+  /calendars`, owner-guarded, events cascade on delete) + **friend-gated sharing**
+  (`POST/DELETE /calendars/:id/share` — only ACCEPTED friends; `GET
+  /calendars/:id/shares`; `GET /shared-with-me`). Delete-anything allowed (can hit
+  zero calendars). This is the bridge to the free-slot merge.
+- 🧪 **48 tests green** (13 unit + 35 integration). GitHub:
   https://github.com/axlothecook/aligned (branch-per-feature → merge to main → push).
-- ⏳ **NEXT: calendars** (create/rename/delete + the per-friend SHARE = calendar_shares)
-  → events → free-slot merge.
+- ⏳ **NEXT: events** (create/edit/delete on a calendar, `tstzrange` UTC + timezone,
+  visibility, all-day) → then the **free-slot MERGE** (the headline feature).
 
 ---
 
