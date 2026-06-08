@@ -304,10 +304,20 @@ The permission link: which friend may VIEW which calendar. Basis for the free-sl
   (`POST/DELETE /calendars/:id/share` — only ACCEPTED friends; `GET
   /calendars/:id/shares`; `GET /shared-with-me`). Delete-anything allowed (can hit
   zero calendars). This is the bridge to the free-slot merge.
-- 🧪 **48 tests green** (13 unit + 35 integration). GitHub:
+- ✅ **EVENTS** (`apps/api/src/events/`) — `POST /calendars/:id/events`,
+  `GET ...?from&to` (windowed via `&&` overlap + GiST), `PATCH/DELETE /events/:id`.
+  Owner-guarded. **Multi-timezone done correctly (researched per RFC 5545/Google):**
+  TIMED events = client sends ISO instant + IANA `timezone` → stored as UTC
+  `tstzrange` (the && overlap is on absolute instants, so CA/NY/China/Croatia
+  friends compare correctly with ZERO per-viewer conversion). ALL-DAY events =
+  a FLOATING `daterange` (new column, migration 0002) — zone-free so "June 10"
+  doesn't drift across timezones. `during`/`timezone` now nullable (all-day has
+  neither). Cross-timezone overlap verified in tests.
+- 🧪 **61 tests green** (18 unit + 43 integration). GitHub:
   https://github.com/axlothecook/aligned (branch-per-feature → merge to main → push).
-- ⏳ **NEXT: events** (create/edit/delete on a calendar, `tstzrange` UTC + timezone,
-  visibility, all-day) → then the **free-slot MERGE** (the headline feature).
+- ⏳ **NEXT: the headline FREE-SLOT MERGE** — overlap friends' shared-calendar
+  events to surface everyone's free time (interval/sweep-line; busy = visible +
+  busy_hidden, private = free; all in UTC).
 
 ---
 
