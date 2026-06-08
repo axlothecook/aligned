@@ -7,6 +7,7 @@ import { sessionMiddleware } from './auth/session';
 import { authRouter } from './auth/routes';
 import { profileRouter } from './profile/routes';
 import { friendsRouter } from './friends/routes';
+import { calendarsRouter } from './calendars/routes';
 
 export function createApp(): Express {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp(): Express {
   app.use('/auth', authRouter);
   app.use('/', profileRouter);
   app.use('/', friendsRouter);
+  app.use('/', calendarsRouter);
 
   return app;
 }
