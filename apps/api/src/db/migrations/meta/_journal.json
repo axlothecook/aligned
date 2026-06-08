@@ -5,22 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1780938989282,
-      "tag": "0000_flaky_vapor",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1780939803242,
-      "tag": "0001_tearful_cardiac",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1780945807487,
-      "tag": "0002_ancient_kitty_pryde",
+      "when": 1780948561367,
+      "tag": "0000_hesitant_the_hand",
       "breakpoints": true
     }
   ]

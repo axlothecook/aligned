@@ -8,13 +8,12 @@ import { eq } from 'drizzle-orm';
 let app: Express;
 let db: typeof import('../db/client').db;
 let users: typeof import('../db/schema').users;
-let calendars: typeof import('../db/schema').calendars;
 
 beforeAll(async () => {
   // Import AFTER integration-setup has set env + pointed the client at the test DB.
   app = (await import('../app')).createApp();
   ({ db } = await import('../db/client'));
-  ({ users, calendars } = await import('../db/schema'));
+  ({ users } = await import('../db/schema'));
 });
 
 const goodSignup = {
@@ -25,7 +24,7 @@ const goodSignup = {
 };
 
 describe('POST /auth/signup', () => {
-  it('creates a user (201) with a tag + a default calendar', async () => {
+  it('creates a user (201) with a tag', async () => {
     const res = await request(app).post('/auth/signup').send(goodSignup);
     expect(res.status).toBe(201);
     expect(res.body.user.email).toBe(goodSignup.email);
@@ -33,12 +32,9 @@ describe('POST /auth/signup', () => {
     expect(res.body.user.emailVerified).toBe(false);
     // password hash never leaks
     expect(res.body.user.passwordHash).toBeUndefined();
-
-    // a default calendar was auto-created for the new user
-    const [u] = await db.select().from(users).where(eq(users.email, goodSignup.email));
-    const cals = await db.select().from(calendars).where(eq(calendars.ownerId, u.id));
-    expect(cals.length).toBe(1);
-    expect(cals[0].name).toBe('My Calendar');
+    // user row exists
+    const found = await db.select().from(users).where(eq(users.email, goodSignup.email));
+    expect(found.length).toBe(1);
   });
 
   it('rejects a duplicate email (409)', async () => {
