@@ -284,7 +284,19 @@ The permission link: which friend may VIEW which calendar. Basis for the free-sl
   → logs code to console in dev). Tested end-to-end incl. edge cases.
   - Env: `apps/api/.env` (DATABASE_URL, SESSION_SECRET, JWT_SECRET, WEB_BASE_URL;
     Brevo unset in dev).
-- ⏳ **NEXT: profiles** → friends → calendars → events → free-slot merge.
+- ✅ **TESTING** — Vitest + supertest. Unit (`*.test.ts`) + integration
+  (`*.integration.test.ts`) configs; separate `aligned_test` DB (global-setup
+  migrates, per-test TRUNCATE). `app.ts` (exported app) split from `index.ts`
+  (listen) for testability. **Rule: tests as we go, per feature.**
+- ✅ **PROFILES** (`apps/api/src/profile/`) — `PATCH /profile` (edit display
+  name/bio/image), `GET /users/:tag` (lookup by `username#discriminator` →
+  public basics + friendship status; **bio shown ONLY to friends/self**,
+  Discord-style). Profile-image FILE upload (→ R2) deferred; `image_url` is a
+  string for now.
+- 🧪 **28 tests green** (10 unit + 18 integration). GitHub:
+  https://github.com/axlothecook/aligned (branch-per-feature → merge to main → push).
+- ⏳ **NEXT: friends** (send/accept/decline requests by tag, block) → calendars →
+  events → free-slot merge.
 
 ---
 
